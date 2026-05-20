@@ -13,6 +13,10 @@ Sou o Murillo, da turma **2TDSPW** (2º ano de ADS na FIAP). Nesse grupo eu fiqu
 - **Kauan** cuida do banco Oracle (modelagem, DDL, procedures)
 - **João Vitor** faz o app mobile em React Native e o deploy na Azure
 
+- Murillo Fernandes Carapia, RM: 564969
+- João Vitor Lacerda, RM: 565565
+- Kauan Vieira de Lima, RM: 565403
+
 ## O que essa API faz
 
 CRUD completo de 6 entidades:
