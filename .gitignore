@@ -21,6 +21,7 @@ obj/
 
 
 .vscode/
+.claude/
 
 
 *.log

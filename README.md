@@ -59,8 +59,8 @@ Tem que aparecer algo tipo `10.0.x`.
 ## Passo 1 — Clonar o repositório
 
 ```powershell
-git clone https://github.com/SEU_USUARIO/petcare360-dotnet.git
-cd petcare360-dotnet
+git clone https://github.com/MurilloFernandesCarapia/Challenge.NET.git
+cd Challenge.NET
 ```
 
 ## Passo 2 — Instalar a ferramenta do EF Core (uma vez só na sua máquina)
@@ -231,6 +231,24 @@ Esse endpoint traz o pet com **todas as consultas, vacinas e medicamentos** junt
 
 ---
 
+# Prints do Swagger
+
+Pra ter uma ideia do que esperar antes de rodar, segue como a interface fica:
+
+### Visão geral — tela inicial do Swagger
+
+Logo que abre `/swagger`, os 6 grupos de entidades aparecem agrupados, cada um listando seus endpoints (GET/POST/PUT/DELETE):
+
+![Swagger — visão da home com endpoints agrupados](docs/screenshots/swagger-home.png)
+
+### Página completa — endpoints + Schemas
+
+A página inteira incluindo a seção **Schemas** no final, que mostra a estrutura JSON de cada entidade (Clinica, Consulta, Medicamento, Pet, Tutor, Vacina, ProblemDetails):
+
+![Swagger — página completa com Schemas](docs/screenshots/swagger-full-page.png)
+
+---
+
 # Endpoints disponíveis
 
 A documentação interativa completa está no Swagger depois de rodar a aplicação. Resumo das rotas:
@@ -314,13 +332,25 @@ Regras de integridade que ficaram explícitas no banco:
 # Estrutura do código
 
 ```
-PetCare360.API/
-├── Controllers/      ← endpoints
-├── Models/           ← classes do domínio
-├── Data/             ← AppDbContext (configuração do EF Core)
-├── Migrations/       ← histórico de mudanças no banco
-├── Program.cs        ← entrada e configuração
-└── appsettings.json  ← config (com a connection string)
+Challenge.NET/
+├── PetCare360.API/
+│   ├── Controllers/                ← 6 endpoints (Tutores, Pets, Clinicas, Consultas, Vacinas, Medicamentos)
+│   ├── Models/                     ← classes do domínio (Tutor, Pet, Clinica, Consulta, Vacina, Medicamento)
+│   ├── Data/
+│   │   └── AppDbContext.cs         ← configuração do EF Core (Fluent API + relacionamentos)
+│   ├── Migrations/                 ← histórico de mudanças no banco
+│   │   ├── 20260512232200_InitialCreate.cs
+│   │   └── 20260520025529_AjusteModelo.cs
+│   ├── Properties/
+│   │   └── launchSettings.json     ← perfis de execução (http/https)
+│   ├── Program.cs                  ← entrada e configuração da API
+│   ├── appsettings.json            ← config (connection string Oracle)
+│   └── PetCare360.API.csproj       ← dependências do projeto
+├── docs/
+│   └── screenshots/                ← prints do Swagger pra documentação
+├── .gitignore
+├── PetCare360.API.slnx             ← solução .NET
+└── README.md                       ← este arquivo
 ```
 
 ---
