@@ -6,15 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("OracleConnection");
 
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException(
-        "A connection string 'OracleConnection' não foi configurada. " +
-        "Defina a variável de ambiente 'ConnectionStrings__OracleConnection' " +
-        "ou edite o appsettings.json com suas credenciais Oracle. " +
-        "Consulte o README na seção 'Configurar credenciais do Oracle'.");
-}
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseOracle(connectionString,
         b => b.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19)));

@@ -81,54 +81,7 @@ dotnet ef --version
 
 ## Passo 3 — Configurar suas credenciais do Oracle
 
-> 🔒 **Por segurança, este projeto NÃO traz credenciais hard-coded no `appsettings.json`.** O campo `OracleConnection` vem vazio no repositório, e a aplicação lê a connection string de uma **variável de ambiente**. Isso evita que senhas vazem pro GitHub.
-
-Você tem **duas opções** pra configurar suas credenciais. Escolha **uma**:
-
----
-
-### Opção A (recomendada) — Variável de ambiente
-
-Essa é a forma segura, igual em produção. A senha nunca entra no código.
-
-**Windows (PowerShell — sessão atual, some quando fechar o terminal):**
-
-```powershell
-$env:ConnectionStrings__OracleConnection = "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL;"
-```
-
-**Windows (permanente — fica salvo no usuário):**
-
-```powershell
-setx ConnectionStrings__OracleConnection "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL;"
-```
-
-> ⚠️ Depois de usar `setx`, **feche e reabra o PowerShell** pra ele enxergar a variável.
-
-**Linux/Mac (Bash):**
-
-```bash
-export ConnectionStrings__OracleConnection="User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL;"
-```
-
-Substitua:
-- `SEU_USUARIO` pelo seu usuário Oracle (ex: o seu RM da FIAP, tipo `RM123456`)
-- `SUA_SENHA` pela sua senha do Oracle
-- `Data Source` se você usa outro servidor (ex: `localhost:1521/XEPDB1` pro Oracle XE local)
-
-> 💡 **Por que `__` (dois sublinhados)?** No .NET, o `__` na variável de ambiente representa o `:` da hierarquia do `appsettings.json`. Então `ConnectionStrings__OracleConnection` aponta pra `ConnectionStrings:OracleConnection`. É a convenção oficial.
-
-Pra conferir que a variável tá setada:
-
-```powershell
-echo $env:ConnectionStrings__OracleConnection
-```
-
----
-
-### Opção B (simples) — Editar o appsettings.json direto
-
-Se você não quer mexer com variável de ambiente, abre `PetCare360.API/appsettings.json` e preenche o campo vazio:
+Abre o arquivo `PetCare360.API/appsettings.json` e edita a connection string com **suas credenciais**:
 
 ```json
 {
@@ -138,9 +91,10 @@ Se você não quer mexer com variável de ambiente, abre `PetCare360.API/appsett
 }
 ```
 
-> ⚠️ **Cuidado:** se você editar o `appsettings.json` com a senha de verdade, **não commite essa alteração no Git**. Use `git update-index --skip-worktree PetCare360.API/appsettings.json` pra ignorar mudanças locais nesse arquivo.
-
----
+Substitua:
+- `SEU_USUARIO` pelo seu usuário Oracle (ex: o seu RM da FIAP)
+- `SUA_SENHA` pela sua senha
+- `Data Source` se você usa outro servidor (ex: `localhost:1521/XEPDB1` pro Oracle XE local)
 
 > 💡 Se o banco que você vai apontar tiver outras tabelas com nomes começando com `TB_` (TB_TUTOR, TB_PET, etc), apague elas antes — o EF vai criar tudo do zero.
 
@@ -372,9 +326,6 @@ PetCare360.API/
 ---
 
 # Resolução de problemas comuns
-
-**`InvalidOperationException: A connection string 'OracleConnection' não foi configurada`**
-> Você pulou o Passo 3. Configure a variável de ambiente ou edite o `appsettings.json`. Se usou `setx`, fechou e reabriu o terminal?
 
 **"dotnet-ef" não é reconhecido como comando**
 > Você não instalou o tool. Volte ao Passo 2.
