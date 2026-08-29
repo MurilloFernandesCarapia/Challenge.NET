@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetCare360.API.Data;
-using PetCare360.API.Models;
+using PetCare360.Domain.Entities;
+using PetCare360.Domain.Exceptions;
+using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
 {
@@ -9,19 +9,20 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class ConsultasController : ControllerBase
     {
-        private readonly AppDbContext dbContext;
+        private readonly IConsultaService _consultaService;
+        private readonly ILogger<ConsultasController> _logger;
 
-        public ConsultasController(AppDbContext _dbContext)
+        public ConsultasController(IConsultaService consultaService, ILogger<ConsultasController> logger)
         {
-            dbContext = _dbContext;
+            _consultaService = consultaService;
+            _logger = logger;
         }
 
-        
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
-            var consultas = await dbContext.Consultas.ToListAsync();
+            var consultas = await _consultaService.GetAllAsync();
             return Ok(consultas);
         }
 
@@ -30,7 +31,7 @@ namespace PetCare360.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
-            var consulta = await dbContext.Consultas.FindAsync(id);
+            var consulta = await _consultaService.GetByIdAsync(id);
             if (consulta == null)
             {
                 return NotFound("Consulta não encontrada.");
@@ -38,29 +39,22 @@ namespace PetCare360.API.Controllers
             return Ok(consulta);
         }
 
-        
         [HttpGet("pet/{petId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPet(int petId)
         {
-            var consultas = await dbContext.Consultas
-                .Where(c => c.IdPet == petId)
-                .ToListAsync();
+            var consultas = await _consultaService.GetByPetAsync(petId);
             return Ok(consultas);
         }
 
-       
         [HttpGet("clinica/{clinicaId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByClinica(int clinicaId)
         {
-            var consultas = await dbContext.Consultas
-                .Where(c => c.IdClinica == clinicaId)
-                .ToListAsync();
+            var consultas = await _consultaService.GetByClinicaAsync(clinicaId);
             return Ok(consultas);
         }
 
-        
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -71,25 +65,18 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            bool petExiste = await dbContext.Pets.AnyAsync(p => p.IdPet == consulta.IdPet);
-            if (!petExiste)
+            try
             {
-                return BadRequest("O pet informado não existe.");
+                var consultaCriada = await _consultaService.CreateAsync(consulta);
+                return CreatedAtAction(nameof(GetById), new { id = consultaCriada.IdConsulta }, consultaCriada);
             }
-
-            bool clinicaExiste = await dbContext.Clinicas.AnyAsync(c => c.IdClinica == consulta.IdClinica);
-            if (!clinicaExiste)
+            catch (RegraDeNegocioException ex)
             {
-                return BadRequest("A clínica informada não existe.");
+                _logger.LogWarning(ex, "Regra de negócio violada ao registrar consulta.");
+                return BadRequest(ex.Message);
             }
-
-            dbContext.Consultas.Add(consulta);
-            await dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = consulta.IdConsulta }, consulta);
         }
 
-        
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -106,36 +93,26 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var consultaExistente = await dbContext.Consultas.FindAsync(id);
-            if (consultaExistente == null)
+            bool atualizada = await _consultaService.UpdateAsync(id, consultaAtualizada);
+            if (!atualizada)
             {
                 return NotFound("Consulta não encontrada.");
             }
 
-            consultaExistente.DtConsulta = consultaAtualizada.DtConsulta;
-            consultaExistente.Descricao = consultaAtualizada.Descricao;
-            consultaExistente.Diagnostico = consultaAtualizada.Diagnostico;
-            consultaExistente.IdPet = consultaAtualizada.IdPet;
-            consultaExistente.IdClinica = consultaAtualizada.IdClinica;
-
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
 
-       
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var consulta = await dbContext.Consultas.FindAsync(id);
-            if (consulta == null)
+            bool removida = await _consultaService.DeleteAsync(id);
+            if (!removida)
             {
                 return NotFound("Consulta não encontrada.");
             }
 
-            dbContext.Consultas.Remove(consulta);
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
     }

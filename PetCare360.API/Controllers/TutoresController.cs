@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetCare360.API.Data;
-using PetCare360.API.Models;
+using PetCare360.Domain.Entities;
+using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
 {
@@ -9,39 +8,36 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class TutoresController : ControllerBase
     {
-        private readonly AppDbContext dbContext;
+        private readonly ITutorService _tutorService;
+        private readonly ILogger<TutoresController> _logger;
 
-        public TutoresController(AppDbContext _dbContext)
+        public TutoresController(ITutorService tutorService, ILogger<TutoresController> logger)
         {
-            dbContext = _dbContext;
+            _tutorService = tutorService;
+            _logger = logger;
         }
 
-       
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
-            var tutores = await dbContext.Tutores.ToListAsync();
+            var tutores = await _tutorService.GetAllAsync();
             return Ok(tutores);
         }
 
-      
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
-            var tutor = await dbContext.Tutores.FindAsync(id);
-
+            var tutor = await _tutorService.GetByIdAsync(id);
             if (tutor == null)
             {
                 return NotFound("Tutor não encontrado.");
             }
-
             return Ok(tutor);
         }
 
-       
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,13 +48,10 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            dbContext.Tutores.Add(tutor);
-            await dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = tutor.IdTutor }, tutor);
+            var tutorCriado = await _tutorService.CreateAsync(tutor);
+            return CreatedAtAction(nameof(GetById), new { id = tutorCriado.IdTutor }, tutorCriado);
         }
 
-       
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,39 +68,25 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var tutorExistente = await dbContext.Tutores.FindAsync(id);
-            if (tutorExistente == null)
+            bool atualizado = await _tutorService.UpdateAsync(id, tutorAtualizado);
+            if (!atualizado)
             {
                 return NotFound("Tutor não encontrado.");
             }
 
-
-            tutorExistente.NmTutor = tutorAtualizado.NmTutor;
-            tutorExistente.Cpf = tutorAtualizado.Cpf;
-            tutorExistente.Email = tutorAtualizado.Email;
-            tutorExistente.Telefone = tutorAtualizado.Telefone;
-            tutorExistente.Endereco = tutorAtualizado.Endereco;
-
-            await dbContext.SaveChangesAsync();
-
             return NoContent();
         }
 
-        
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var tutor = await dbContext.Tutores.FindAsync(id);
-
-            if (tutor == null)
+            bool removido = await _tutorService.DeleteAsync(id);
+            if (!removido)
             {
                 return NotFound("Tutor não encontrado.");
             }
-
-            dbContext.Tutores.Remove(tutor);
-            await dbContext.SaveChangesAsync();
 
             return NoContent();
         }

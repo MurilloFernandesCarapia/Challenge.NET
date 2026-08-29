@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetCare360.API.Data;
-using PetCare360.API.Models;
+using PetCare360.Domain.Entities;
+using PetCare360.Domain.Exceptions;
+using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
 {
@@ -9,29 +9,29 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class VacinasController : ControllerBase
     {
-        private readonly AppDbContext dbContext;
+        private readonly IVacinaService _vacinaService;
+        private readonly ILogger<VacinasController> _logger;
 
-        public VacinasController(AppDbContext _dbContext)
+        public VacinasController(IVacinaService vacinaService, ILogger<VacinasController> logger)
         {
-            dbContext = _dbContext;
+            _vacinaService = vacinaService;
+            _logger = logger;
         }
 
-      
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
-            var vacinas = await dbContext.Vacinas.ToListAsync();
+            var vacinas = await _vacinaService.GetAllAsync();
             return Ok(vacinas);
         }
 
-       
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
-            var vacina = await dbContext.Vacinas.FindAsync(id);
+            var vacina = await _vacinaService.GetByIdAsync(id);
             if (vacina == null)
             {
                 return NotFound("Vacina não encontrada.");
@@ -39,18 +39,14 @@ namespace PetCare360.API.Controllers
             return Ok(vacina);
         }
 
-        
         [HttpGet("pet/{petId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPet(int petId)
         {
-            var vacinas = await dbContext.Vacinas
-                .Where(v => v.IdPet == petId)
-                .ToListAsync();
+            var vacinas = await _vacinaService.GetByPetAsync(petId);
             return Ok(vacinas);
         }
 
-       
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,19 +57,18 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            bool petExiste = await dbContext.Pets.AnyAsync(p => p.IdPet == vacina.IdPet);
-            if (!petExiste)
+            try
             {
-                return BadRequest("O pet informado não existe.");
+                var vacinaCriada = await _vacinaService.CreateAsync(vacina);
+                return CreatedAtAction(nameof(GetById), new { id = vacinaCriada.IdVacina }, vacinaCriada);
             }
-
-            dbContext.Vacinas.Add(vacina);
-            await dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = vacina.IdVacina }, vacina);
+            catch (RegraDeNegocioException ex)
+            {
+                _logger.LogWarning(ex, "Regra de negócio violada ao registrar vacina.");
+                return BadRequest(ex.Message);
+            }
         }
 
-        
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,37 +85,26 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var vacinaExistente = await dbContext.Vacinas.FindAsync(id);
-            if (vacinaExistente == null)
+            bool atualizada = await _vacinaService.UpdateAsync(id, vacinaAtualizada);
+            if (!atualizada)
             {
                 return NotFound("Vacina não encontrada.");
             }
 
-            vacinaExistente.NmVacina = vacinaAtualizada.NmVacina;
-            vacinaExistente.Fabricante = vacinaAtualizada.Fabricante;
-            vacinaExistente.DtAplicacao = vacinaAtualizada.DtAplicacao;
-            vacinaExistente.DtProximaDose = vacinaAtualizada.DtProximaDose;
-            vacinaExistente.IdPet = vacinaAtualizada.IdPet;
-            vacinaExistente.IdConsulta = vacinaAtualizada.IdConsulta;
-
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
 
-       
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var vacina = await dbContext.Vacinas.FindAsync(id);
-            if (vacina == null)
+            bool removida = await _vacinaService.DeleteAsync(id);
+            if (!removida)
             {
                 return NotFound("Vacina não encontrada.");
             }
 
-            dbContext.Vacinas.Remove(vacina);
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
     }

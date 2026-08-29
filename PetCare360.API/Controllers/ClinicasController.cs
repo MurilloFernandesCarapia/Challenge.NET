@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetCare360.API.Data;
-using PetCare360.API.Models;
+using PetCare360.Domain.Entities;
+using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
 {
@@ -9,29 +8,29 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class ClinicasController : ControllerBase
     {
-        private readonly AppDbContext dbContext;
+        private readonly IClinicaService _clinicaService;
+        private readonly ILogger<ClinicasController> _logger;
 
-        public ClinicasController(AppDbContext _dbContext)
+        public ClinicasController(IClinicaService clinicaService, ILogger<ClinicasController> logger)
         {
-            dbContext = _dbContext;
+            _clinicaService = clinicaService;
+            _logger = logger;
         }
 
-        
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
-            var clinicas = await dbContext.Clinicas.ToListAsync();
+            var clinicas = await _clinicaService.GetAllAsync();
             return Ok(clinicas);
         }
 
-       
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
-            var clinica = await dbContext.Clinicas.FindAsync(id);
+            var clinica = await _clinicaService.GetByIdAsync(id);
             if (clinica == null)
             {
                 return NotFound("Clínica não encontrada.");
@@ -39,13 +38,12 @@ namespace PetCare360.API.Controllers
             return Ok(clinica);
         }
 
-        
         [HttpGet("cnpj/{cnpj}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByCnpj(string cnpj)
         {
-            var clinica = await dbContext.Clinicas.FirstOrDefaultAsync(c => c.Cnpj == cnpj);
+            var clinica = await _clinicaService.GetByCnpjAsync(cnpj);
             if (clinica == null)
             {
                 return NotFound("Clínica não encontrada.");
@@ -53,7 +51,6 @@ namespace PetCare360.API.Controllers
             return Ok(clinica);
         }
 
-        
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -64,13 +61,10 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            dbContext.Clinicas.Add(clinica);
-            await dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = clinica.IdClinica }, clinica);
+            var clinicaCriada = await _clinicaService.CreateAsync(clinica);
+            return CreatedAtAction(nameof(GetById), new { id = clinicaCriada.IdClinica }, clinicaCriada);
         }
 
-       
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -87,36 +81,26 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var clinicaExistente = await dbContext.Clinicas.FindAsync(id);
-            if (clinicaExistente == null)
+            bool atualizada = await _clinicaService.UpdateAsync(id, clinicaAtualizada);
+            if (!atualizada)
             {
                 return NotFound("Clínica não encontrada.");
             }
 
-            clinicaExistente.NmClinica = clinicaAtualizada.NmClinica;
-            clinicaExistente.Cnpj = clinicaAtualizada.Cnpj;
-            clinicaExistente.Endereco = clinicaAtualizada.Endereco;
-            clinicaExistente.Telefone = clinicaAtualizada.Telefone;
-            clinicaExistente.Email = clinicaAtualizada.Email;
-
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
 
-        
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var clinica = await dbContext.Clinicas.FindAsync(id);
-            if (clinica == null)
+            bool removida = await _clinicaService.DeleteAsync(id);
+            if (!removida)
             {
                 return NotFound("Clínica não encontrada.");
             }
 
-            dbContext.Clinicas.Remove(clinica);
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
     }

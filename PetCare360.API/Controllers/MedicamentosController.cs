@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetCare360.API.Data;
-using PetCare360.API.Models;
+using PetCare360.Domain.Entities;
+using PetCare360.Domain.Exceptions;
+using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
 {
@@ -9,29 +9,29 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class MedicamentosController : ControllerBase
     {
-        private readonly AppDbContext dbContext;
+        private readonly IMedicamentoService _medicamentoService;
+        private readonly ILogger<MedicamentosController> _logger;
 
-        public MedicamentosController(AppDbContext _dbContext)
+        public MedicamentosController(IMedicamentoService medicamentoService, ILogger<MedicamentosController> logger)
         {
-            dbContext = _dbContext;
+            _medicamentoService = medicamentoService;
+            _logger = logger;
         }
 
-       
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
-            var medicamentos = await dbContext.Medicamentos.ToListAsync();
+            var medicamentos = await _medicamentoService.GetAllAsync();
             return Ok(medicamentos);
         }
 
-       
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
-            var medicamento = await dbContext.Medicamentos.FindAsync(id);
+            var medicamento = await _medicamentoService.GetByIdAsync(id);
             if (medicamento == null)
             {
                 return NotFound("Medicamento não encontrado.");
@@ -39,18 +39,14 @@ namespace PetCare360.API.Controllers
             return Ok(medicamento);
         }
 
-       
         [HttpGet("pet/{petId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPet(int petId)
         {
-            var medicamentos = await dbContext.Medicamentos
-                .Where(m => m.IdPet == petId)
-                .ToListAsync();
+            var medicamentos = await _medicamentoService.GetByPetAsync(petId);
             return Ok(medicamentos);
         }
 
-        
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,19 +57,18 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            bool petExiste = await dbContext.Pets.AnyAsync(p => p.IdPet == medicamento.IdPet);
-            if (!petExiste)
+            try
             {
-                return BadRequest("O pet informado não existe.");
+                var medicamentoCriado = await _medicamentoService.CreateAsync(medicamento);
+                return CreatedAtAction(nameof(GetById), new { id = medicamentoCriado.IdMedicamento }, medicamentoCriado);
             }
-
-            dbContext.Medicamentos.Add(medicamento);
-            await dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = medicamento.IdMedicamento }, medicamento);
+            catch (RegraDeNegocioException ex)
+            {
+                _logger.LogWarning(ex, "Regra de negócio violada ao prescrever medicamento.");
+                return BadRequest(ex.Message);
+            }
         }
 
-        
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,38 +85,26 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var medicamentoExistente = await dbContext.Medicamentos.FindAsync(id);
-            if (medicamentoExistente == null)
+            bool atualizado = await _medicamentoService.UpdateAsync(id, medicamentoAtualizado);
+            if (!atualizado)
             {
                 return NotFound("Medicamento não encontrado.");
             }
 
-            medicamentoExistente.NmMedicamento = medicamentoAtualizado.NmMedicamento;
-            medicamentoExistente.Dosagem = medicamentoAtualizado.Dosagem;
-            medicamentoExistente.Frequencia = medicamentoAtualizado.Frequencia;
-            medicamentoExistente.DtInicio = medicamentoAtualizado.DtInicio;
-            medicamentoExistente.DtFim = medicamentoAtualizado.DtFim;
-            medicamentoExistente.IdPet = medicamentoAtualizado.IdPet;
-            medicamentoExistente.IdConsulta = medicamentoAtualizado.IdConsulta;
-
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
 
-        
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var medicamento = await dbContext.Medicamentos.FindAsync(id);
-            if (medicamento == null)
+            bool removido = await _medicamentoService.DeleteAsync(id);
+            if (!removido)
             {
                 return NotFound("Medicamento não encontrado.");
             }
 
-            dbContext.Medicamentos.Remove(medicamento);
-            await dbContext.SaveChangesAsync();
             return NoContent();
         }
     }
