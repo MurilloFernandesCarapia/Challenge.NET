@@ -8,18 +8,14 @@ Esta API é o núcleo de cadastro: toda informação principal passa por aqui an
 
 ## Quem fez
 
-Sou o Murillo, da turma **2TDSPW** (2º ano de ADS na FIAP). Nesse grupo eu fiquei responsável pelas APIs do projeto (.NET e Java). Os outros integrantes:
+Sou o Murillo, da turma **2TDSPW** (2º ano de ADS na FIAP). Nesse grupo eu fiquei responsável pelas APIs do projeto . Os outros integrantes:
 
-- **Kauan** cuida do banco Oracle (modelagem, DDL, procedures)
-- **João Vitor** faz o app mobile em React Native e o deploy na Azure
 
-- Murillo Fernandes Carapia, RM: 564969
-- João Vitor Lacerda, RM: 565565
-- Kauan Vieira de Lima, RM: 565403
 
 - Murillo Fernandes Carapia, RM: 564969
 - João Vitor Lacerda, RM: 565565
 - Kauan Vieira de Lima, RM: 565403
+- Pedro de Matos Previtali, RM: 564184
 
 ## O que essa API faz
 
