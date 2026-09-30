@@ -20,7 +20,6 @@ namespace PetCare360.UnitTests.Handlers
             _handler = new GlobalExceptionHandler(_mockLogger.Object);
         }
 
-        //Cria um HttpContext "falso" com o corpo da resposta em memória pra conseguir ler o JSON depois
         private static DefaultHttpContext CriarHttpContext()
         {
             var httpContext = new DefaultHttpContext();
@@ -40,14 +39,11 @@ namespace PetCare360.UnitTests.Handlers
         [Fact]
         public async Task TryHandleAsync_RegraDeNegocioException_RetornaBadRequestComMensagem()
         {
-            // Arrange
             var httpContext = CriarHttpContext();
             var excecao = new RegraDeNegocioException("O tutor informado não existe.");
 
-            // Act
             var tratado = await _handler.TryHandleAsync(httpContext, excecao, CancellationToken.None);
 
-            // Assert
             Assert.True(tratado);
             Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
 
@@ -59,29 +55,38 @@ namespace PetCare360.UnitTests.Handlers
         [Fact]
         public async Task TryHandleAsync_DbUpdateException_RetornaConflict()
         {
-            // Arrange
             var httpContext = CriarHttpContext();
             var excecao = new DbUpdateException("ORA-02292: integrity constraint violated");
 
-            // Act
             var tratado = await _handler.TryHandleAsync(httpContext, excecao, CancellationToken.None);
 
-            // Assert
             Assert.True(tratado);
             Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
         }
 
         [Fact]
+        public async Task TryHandleAsync_CredenciaisInvalidasException_RetornaUnauthorized()
+        {
+            var httpContext = CriarHttpContext();
+            var excecao = new CredenciaisInvalidasException();
+
+            var tratado = await _handler.TryHandleAsync(httpContext, excecao, CancellationToken.None);
+
+            Assert.True(tratado);
+            Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+
+            var corpo = await LerCorpoAsync(httpContext);
+            Assert.Equal("E-mail ou senha inválidos.", corpo.GetProperty("detail").GetString());
+        }
+
+        [Fact]
         public async Task TryHandleAsync_ExcecaoInesperada_RetornaErroInternoSemExporDetalhes()
         {
-            // Arrange
             var httpContext = CriarHttpContext();
             var excecao = new InvalidOperationException("detalhe interno que não pode vazar");
 
-            // Act
             await _handler.TryHandleAsync(httpContext, excecao, CancellationToken.None);
 
-            // Assert
             Assert.Equal(StatusCodes.Status500InternalServerError, httpContext.Response.StatusCode);
 
             var corpo = await LerCorpoAsync(httpContext);
@@ -91,15 +96,12 @@ namespace PetCare360.UnitTests.Handlers
         [Fact]
         public async Task TryHandleAsync_ComCorrelationId_DevolveIdNoHeaderENoCorpo()
         {
-            // Arrange
             var httpContext = CriarHttpContext();
             httpContext.Items[CorrelationIdMiddleware.ItemKey] = "abc-123";
             var excecao = new RegraDeNegocioException("O pet informado não existe.");
 
-            // Act
             await _handler.TryHandleAsync(httpContext, excecao, CancellationToken.None);
 
-            // Assert
             Assert.Equal("abc-123", httpContext.Response.Headers[CorrelationIdMiddleware.HeaderName].ToString());
 
             var corpo = await LerCorpoAsync(httpContext);

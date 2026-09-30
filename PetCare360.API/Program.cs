@@ -1,12 +1,12 @@
-using System.Reflection;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using PetCare360.API.Extensions;
 using PetCare360.API.Handlers;
 using PetCare360.API.Middleware;
 using PetCare360.Infrastructure;
+using PetCare360.Infrastructure.Data;
 using Serilog;
 using Serilog.Events;
-
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -25,8 +25,8 @@ try
 
     builder.Host.UseSerilog();
 
-    //Injeta banco, repositórios, serviços, health checks e OpenTelemetry
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddJwtAuthentication(builder.Configuration);
 
     builder.Services.AddControllers()
         .AddJsonOptions(options =>
@@ -35,22 +35,15 @@ try
                 System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         });
 
-    //Tratamento global de exceções: transforma qualquer exceção em ProblemDetails
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(c =>
-    {
-        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        if (File.Exists(xmlPath))
-        {
-            c.IncludeXmlComments(xmlPath);
-        }
-    });
+    builder.Services.AddSwaggerComJwt();
 
     var app = builder.Build();
+
+    await app.Services.CriarAdminPadraoAsync(app.Configuration);
 
     if (app.Environment.IsDevelopment())
     {
@@ -58,43 +51,38 @@ try
         app.UseSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "PetCare360 API v1");
+            c.EnablePersistAuthorization();
         });
     }
 
     app.UseMiddleware<CorrelationIdMiddleware>();
 
-    //Registra uma linha de log por requisição HTTP, com rota, status e duração
     app.UseSerilogRequestLogging();
 
-    //Tratamento global de exceções. Fica depois do CorrelationId e do log de requisição
-    //pra que o log já saia com o status final (400, 409, 500) e com o correlation id.
     app.UseExceptionHandler();
 
     app.UseHttpsRedirection();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
 
-    //Liveness: a aplicação está viva? Responde 200 na hora, sem tocar no banco.
     app.MapHealthChecks("/health/live", new HealthCheckOptions
     {
         Predicate = check => check.Tags.Contains("live")
     });
 
-    //Readiness: a aplicação está pronta para receber tráfego? Depende do Oracle.
     app.MapHealthChecks("/health/ready", new HealthCheckOptions
     {
         Predicate = check => check.Tags.Contains("ready"),
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
     });
 
-    //Startup: a aplicação terminou de inicializar? Verifica as migrations.
     app.MapHealthChecks("/health/startup", new HealthCheckOptions
     {
         Predicate = check => check.Tags.Contains("startup"),
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
     });
 
-    //Visão geral: roda todos os checks de uma vez
     app.MapHealthChecks("/health", new HealthCheckOptions
     {
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
@@ -102,7 +90,7 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     Log.Fatal(ex, "A aplicação falhou ao iniciar.");
 }
@@ -110,6 +98,5 @@ finally
 {
     Log.CloseAndFlush();
 }
-
 
 public partial class Program { }

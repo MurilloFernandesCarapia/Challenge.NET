@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
@@ -8,6 +9,8 @@ namespace PetCare360.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public class ClinicasController : ControllerBase
     {
         private const string Rota = "/api/Clinicas";
@@ -95,6 +98,8 @@ namespace PetCare360.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = PerfilUsuario.Admin)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]

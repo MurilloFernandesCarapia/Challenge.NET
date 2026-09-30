@@ -9,12 +9,10 @@ using PetCare360.Domain.Exceptions;
 
 namespace PetCare360.API.Handlers
 {
-    
     public class GlobalExceptionHandler : IExceptionHandler
     {
         private readonly ILogger<GlobalExceptionHandler> _logger;
 
-       
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -32,7 +30,6 @@ namespace PetCare360.API.Handlers
         {
             var (statusCode, titulo, detalhe) = MapearExcecao(exception);
 
-            
             if (statusCode >= StatusCodes.Status500InternalServerError)
             {
                 _logger.LogError(exception, "Erro inesperado ao processar {Metodo} {Caminho}",
@@ -52,14 +49,12 @@ namespace PetCare360.API.Handlers
                 Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}"
             };
 
-            
             problemDetails.Extensions["traceId"] = Activity.Current?.TraceId.ToString() ?? httpContext.TraceIdentifier;
 
             if (httpContext.Items.TryGetValue(CorrelationIdMiddleware.ItemKey, out var valor) && valor is string correlationId)
             {
                 problemDetails.Extensions["correlationId"] = correlationId;
 
-                
                 httpContext.Response.Headers[CorrelationIdMiddleware.HeaderName] = correlationId;
             }
 
@@ -69,7 +64,6 @@ namespace PetCare360.API.Handlers
             return true;
         }
 
-        
         private static (int StatusCode, string Titulo, string Detalhe) MapearExcecao(Exception exception)
         {
             return exception switch
@@ -79,12 +73,16 @@ namespace PetCare360.API.Handlers
                     "Regra de negócio violada",
                     exception.Message),
 
+                CredenciaisInvalidasException => (
+                    StatusCodes.Status401Unauthorized,
+                    "Não autorizado",
+                    exception.Message),
+
                 DbUpdateException => (
                     StatusCodes.Status409Conflict,
                     "Conflito ao gravar os dados",
                     "A operação viola uma restrição do banco: registro duplicado (CPF, e-mail ou CNPJ) ou vinculado a outros dados."),
 
-                //a mensagem real da exceção não vai pro cliente, só pro log
                 _ => (
                     StatusCodes.Status500InternalServerError,
                     "Erro interno no servidor",
