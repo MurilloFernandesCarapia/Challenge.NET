@@ -80,6 +80,7 @@ namespace PetCare360.API.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Delete(int id)
         {
             bool removido = await _tutorService.DeleteAsync(id);

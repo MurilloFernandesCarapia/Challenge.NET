@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using PetCare360.Domain.Entities;
-using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
 
 namespace PetCare360.API.Controllers
@@ -78,16 +77,8 @@ namespace PetCare360.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
-                var petCriado = await _petService.CreateAsync(pet);
-                return CreatedAtAction(nameof(GetById), new { id = petCriado.IdPet }, petCriado);
-            }
-            catch (RegraDeNegocioException ex)
-            {
-                _logger.LogWarning(ex, "Regra de negócio violada ao cadastrar pet.");
-                return BadRequest(ex.Message);
-            }
+            var petCriado = await _petService.CreateAsync(pet);
+            return CreatedAtAction(nameof(GetById), new { id = petCriado.IdPet }, petCriado);
         }
 
         [HttpPut("{id}")]

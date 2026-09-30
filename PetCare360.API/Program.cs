@@ -1,6 +1,7 @@
 using System.Reflection;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using PetCare360.API.Handlers;
 using PetCare360.API.Middleware;
 using PetCare360.Infrastructure;
 using Serilog;
@@ -22,7 +23,6 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    
     builder.Host.UseSerilog();
 
     //Injeta banco, repositórios, serviços, health checks e OpenTelemetry
@@ -34,6 +34,10 @@ try
             options.JsonSerializerOptions.ReferenceHandler =
                 System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         });
+
+    //Tratamento global de exceções: transforma qualquer exceção em ProblemDetails
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
@@ -57,11 +61,14 @@ try
         });
     }
 
-    
     app.UseMiddleware<CorrelationIdMiddleware>();
 
     //Registra uma linha de log por requisição HTTP, com rota, status e duração
     app.UseSerilogRequestLogging();
+
+    //Tratamento global de exceções. Fica depois do CorrelationId e do log de requisição
+    //pra que o log já saia com o status final (400, 409, 500) e com o correlation id.
+    app.UseExceptionHandler();
 
     app.UseHttpsRedirection();
     app.UseAuthorization();
@@ -77,7 +84,7 @@ try
     app.MapHealthChecks("/health/ready", new HealthCheckOptions
     {
         Predicate = check => check.Tags.Contains("ready"),
-        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse 
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
     });
 
     //Startup: a aplicação terminou de inicializar? Verifica as migrations.
