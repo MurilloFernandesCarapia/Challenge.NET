@@ -5,6 +5,7 @@ using PetCare360.Application.Diagnostics;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.Application.Services
 {
@@ -40,6 +41,11 @@ namespace PetCare360.Application.Services
             return await _consultaRepository.GetAllAsync();
         }
 
+        public async Task<PagedResult<Consulta>> GetPagedAsync(ConsultaQueryParameters parametros)
+        {
+            return await _consultaRepository.GetPagedAsync(parametros);
+        }
+
         public async Task<Consulta?> GetByIdAsync(int id)
         {
             return await _consultaRepository.GetByIdAsync(id);
@@ -61,7 +67,6 @@ namespace PetCare360.Application.Services
             activity?.SetTag("consulta.pet", consulta.IdPet);
             activity?.SetTag("consulta.clinica", consulta.IdClinica);
 
-            //REGRA DE NEGÓCIO: consulta só existe para um pet cadastrado
             bool petExiste = await _petRepository.ExistsAsync(consulta.IdPet);
             if (!petExiste)
             {
@@ -69,7 +74,6 @@ namespace PetCare360.Application.Services
                 throw new RegraDeNegocioException("O pet informado não existe.");
             }
 
-            //REGRA DE NEGÓCIO: e sempre em uma clínica cadastrada
             bool clinicaExiste = await _clinicaRepository.ExistsAsync(consulta.IdClinica);
             if (!clinicaExiste)
             {

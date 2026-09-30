@@ -5,6 +5,7 @@ using PetCare360.Application.Diagnostics;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.Application.Services
 {
@@ -14,10 +15,8 @@ namespace PetCare360.Application.Services
         private readonly ITutorRepository _tutorRepository;
         private readonly ILogger<PetService> _logger;
 
-        
         private static readonly ActivitySource ActivitySource = new(TelemetryConstants.ServiceName);
 
-        
         private readonly Counter<int> _petsCriadosCounter;
 
         public PetService(
@@ -39,6 +38,11 @@ namespace PetCare360.Application.Services
             return await _petRepository.GetAllAsync();
         }
 
+        public async Task<PagedResult<Pet>> GetPagedAsync(PetQueryParameters parametros)
+        {
+            return await _petRepository.GetPagedAsync(parametros);
+        }
+
         public async Task<Pet?> GetByIdAsync(int id)
         {
             return await _petRepository.GetByIdAsync(id);
@@ -56,7 +60,6 @@ namespace PetCare360.Application.Services
 
         public async Task<Pet?> GetHistoricoAsync(int id)
         {
-            
             using var activity = ActivitySource.StartActivity("ConsultarHistoricoPet");
             activity?.SetTag("pet.id", id);
 
@@ -69,7 +72,7 @@ namespace PetCare360.Application.Services
             activity?.SetTag("pet.nome", pet.NmPet);
             activity?.SetTag("pet.especie", pet.Especie);
 
-            //REGRA DE NEGÓCIO: não existe pet sem tutor responsável
+            
             bool tutorExiste = await _tutorRepository.ExistsAsync(pet.IdTutor);
             if (!tutorExiste)
             {
@@ -79,10 +82,10 @@ namespace PetCare360.Application.Services
 
             await _petRepository.AddAsync(pet);
 
-            //2. LOG ESTRUTURADO: o {@Pet} serializa o objeto inteiro
+            
             _logger.LogInformation("Pet cadastrado com sucesso: {@Pet}", pet);
 
-            //3. MÉTRICA: incrementa o contador com a espécie como tag
+            
             _petsCriadosCounter.Add(1, new KeyValuePair<string, object?>("especie", pet.Especie));
 
             return pet;

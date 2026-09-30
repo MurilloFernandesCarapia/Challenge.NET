@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.API.Controllers
 {
@@ -17,11 +18,12 @@ namespace PetCare360.API.Controllers
             _logger = logger;
         }
 
+        
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(PagedResult<Pet>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAll([FromQuery] PetQueryParameters parametros)
         {
-            var pets = await _petService.GetAllAsync();
+            var pets = await _petService.GetPagedAsync(parametros);
             return Ok(pets);
         }
 

@@ -5,6 +5,7 @@ using PetCare360.Application.Diagnostics;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.Application.Services
 {
@@ -37,6 +38,11 @@ namespace PetCare360.Application.Services
             return await _vacinaRepository.GetAllAsync();
         }
 
+        public async Task<PagedResult<Vacina>> GetPagedAsync(VacinaQueryParameters parametros)
+        {
+            return await _vacinaRepository.GetPagedAsync(parametros);
+        }
+
         public async Task<Vacina?> GetByIdAsync(int id)
         {
             return await _vacinaRepository.GetByIdAsync(id);
@@ -53,7 +59,6 @@ namespace PetCare360.Application.Services
             activity?.SetTag("vacina.nome", vacina.NmVacina);
             activity?.SetTag("vacina.pet", vacina.IdPet);
 
-            //REGRA DE NEGÓCIO: vacina sempre pertence a um pet cadastrado
             bool petExiste = await _petRepository.ExistsAsync(vacina.IdPet);
             if (!petExiste)
             {

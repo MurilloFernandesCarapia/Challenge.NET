@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using PetCare360.Application.Diagnostics;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.Application.Services
 {
@@ -31,6 +32,11 @@ namespace PetCare360.Application.Services
         public async Task<IEnumerable<Clinica>> GetAllAsync()
         {
             return await _clinicaRepository.GetAllAsync();
+        }
+
+        public async Task<PagedResult<Clinica>> GetPagedAsync(ClinicaQueryParameters parametros)
+        {
+            return await _clinicaRepository.GetPagedAsync(parametros);
         }
 
         public async Task<Clinica?> GetByIdAsync(int id)

@@ -5,6 +5,7 @@ using PetCare360.Application.Diagnostics;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
+using PetCare360.Domain.Pagination;
 
 namespace PetCare360.Application.Services
 {
@@ -37,6 +38,11 @@ namespace PetCare360.Application.Services
             return await _medicamentoRepository.GetAllAsync();
         }
 
+        public async Task<PagedResult<Medicamento>> GetPagedAsync(MedicamentoQueryParameters parametros)
+        {
+            return await _medicamentoRepository.GetPagedAsync(parametros);
+        }
+
         public async Task<Medicamento?> GetByIdAsync(int id)
         {
             return await _medicamentoRepository.GetByIdAsync(id);
@@ -53,7 +59,6 @@ namespace PetCare360.Application.Services
             activity?.SetTag("medicamento.nome", medicamento.NmMedicamento);
             activity?.SetTag("medicamento.pet", medicamento.IdPet);
 
-            //REGRA DE NEGÓCIO: medicamento sempre pertence a um pet cadastrado
             bool petExiste = await _petRepository.ExistsAsync(medicamento.IdPet);
             if (!petExiste)
             {
