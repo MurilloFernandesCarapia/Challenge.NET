@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
 using PetCare360.Domain.Pagination;
@@ -9,6 +10,8 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class TutoresController : ControllerBase
     {
+        private const string Rota = "/api/Tutores";
+
         private readonly ITutorService _tutorService;
         private readonly ILogger<TutoresController> _logger;
 
@@ -19,15 +22,15 @@ namespace PetCare360.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<Tutor>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RecursoPaginado<Tutor>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] TutorQueryParameters parametros)
         {
             var tutores = await _tutorService.GetPagedAsync(parametros);
-            return Ok(tutores);
+            return Ok(HateoasBuilder.CriarRecursoPaginado(tutores, parametros, Rota, CriarRecurso));
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Recurso<Tutor>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
@@ -36,7 +39,7 @@ namespace PetCare360.API.Controllers
             {
                 return NotFound("Tutor não encontrado.");
             }
-            return Ok(tutor);
+            return Ok(CriarRecurso(tutor));
         }
 
         [HttpPost]
@@ -91,6 +94,12 @@ namespace PetCare360.API.Controllers
             }
 
             return NoContent();
+        }
+
+        private static Recurso<Tutor> CriarRecurso(Tutor tutor)
+        {
+            return HateoasBuilder.CriarRecurso(tutor, Rota, tutor.IdTutor,
+                new Link($"/api/Pets/tutor/{tutor.IdTutor}", "pets", "GET"));
         }
     }
 }

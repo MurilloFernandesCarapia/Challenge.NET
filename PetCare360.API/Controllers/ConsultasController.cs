@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
 using PetCare360.Domain.Pagination;
@@ -9,6 +10,8 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class ConsultasController : ControllerBase
     {
+        private const string Rota = "/api/Consultas";
+
         private readonly IConsultaService _consultaService;
         private readonly ILogger<ConsultasController> _logger;
 
@@ -19,15 +22,15 @@ namespace PetCare360.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<Consulta>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RecursoPaginado<Consulta>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] ConsultaQueryParameters parametros)
         {
             var consultas = await _consultaService.GetPagedAsync(parametros);
-            return Ok(consultas);
+            return Ok(HateoasBuilder.CriarRecursoPaginado(consultas, parametros, Rota, CriarRecurso));
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Recurso<Consulta>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
@@ -36,23 +39,23 @@ namespace PetCare360.API.Controllers
             {
                 return NotFound("Consulta não encontrada.");
             }
-            return Ok(consulta);
+            return Ok(CriarRecurso(consulta));
         }
 
         [HttpGet("pet/{petId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<Recurso<Consulta>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPet(int petId)
         {
             var consultas = await _consultaService.GetByPetAsync(petId);
-            return Ok(consultas);
+            return Ok(consultas.Select(CriarRecurso));
         }
 
         [HttpGet("clinica/{clinicaId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<Recurso<Consulta>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByClinica(int clinicaId)
         {
             var consultas = await _consultaService.GetByClinicaAsync(clinicaId);
-            return Ok(consultas);
+            return Ok(consultas.Select(CriarRecurso));
         }
 
         [HttpPost]
@@ -106,6 +109,13 @@ namespace PetCare360.API.Controllers
             }
 
             return NoContent();
+        }
+
+        private static Recurso<Consulta> CriarRecurso(Consulta consulta)
+        {
+            return HateoasBuilder.CriarRecurso(consulta, Rota, consulta.IdConsulta,
+                new Link($"/api/Pets/{consulta.IdPet}", "pet", "GET"),
+                new Link($"/api/Clinicas/{consulta.IdClinica}", "clinica", "GET"));
         }
     }
 }

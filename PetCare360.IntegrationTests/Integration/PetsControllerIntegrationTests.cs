@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.IntegrationTests.FactoryFixture;
 
@@ -15,7 +16,6 @@ namespace PetCare360.IntegrationTests.Integration
             _client = factory.CreateClient();
         }
 
-        //Método auxiliar: todo pet precisa de um tutor, então criamos um antes
         private async Task<int> CriarTutorAsync(string email)
         {
             var tutor = new
@@ -35,7 +35,6 @@ namespace PetCare360.IntegrationTests.Integration
         [Fact]
         public async Task CriarPet_TutorExistente_RetornaCreated()
         {
-            // Arrange
             var idTutor = await CriarTutorAsync("tutor.pet.ok@petcare360.com");
             var novoPet = new
             {
@@ -46,10 +45,8 @@ namespace PetCare360.IntegrationTests.Integration
                 idTutor
             };
 
-            // Act
             var response = await _client.PostAsJsonAsync("/api/Pets", novoPet);
 
-            // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             var petCriado = await response.Content.ReadFromJsonAsync<Pet>();
@@ -61,7 +58,6 @@ namespace PetCare360.IntegrationTests.Integration
         [Fact]
         public async Task CriarPet_TutorInexistente_RetornaBadRequest()
         {
-            // Arrange
             var petSemTutor = new
             {
                 nmPet = "Fantasma",
@@ -70,11 +66,8 @@ namespace PetCare360.IntegrationTests.Integration
                 idTutor = 999999
             };
 
-            // Act
             var response = await _client.PostAsJsonAsync("/api/Pets", petSemTutor);
 
-            // Assert
-            //a exceção sai do service, passa pelo GlobalExceptionHandler e vira ProblemDetails
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
@@ -85,7 +78,6 @@ namespace PetCare360.IntegrationTests.Integration
         [Fact]
         public async Task BuscarHistorico_PetComVacina_RetornaPetComRelacionamentos()
         {
-            // Arrange
             var idTutor = await CriarTutorAsync("tutor.historico@petcare360.com");
 
             var petResponse = await _client.PostAsJsonAsync("/api/Pets", new
@@ -105,20 +97,18 @@ namespace PetCare360.IntegrationTests.Integration
                 idPet = pet!.IdPet
             });
 
-            // Act
             var response = await _client.GetAsync($"/api/Pets/{pet.IdPet}/historico");
 
-            // Assert
             response.EnsureSuccessStatusCode();
-            var historico = await response.Content.ReadFromJsonAsync<Pet>();
+            var historico = await response.Content.ReadFromJsonAsync<Recurso<Pet>>();
             Assert.NotNull(historico);
-            Assert.Contains(historico.Vacinas, v => v.NmVacina == "Antirrábica");
+            Assert.Contains(historico.Dados.Vacinas, v => v.NmVacina == "Antirrábica");
+            Assert.Contains(historico.Links, l => l.Rel == "historico");
         }
 
         [Fact]
         public async Task AtualizarPet_IdDaUrlDiferenteDoCorpo_RetornaBadRequest()
         {
-            // Arrange
             var idTutor = await CriarTutorAsync("tutor.update@petcare360.com");
             var petResponse = await _client.PostAsJsonAsync("/api/Pets", new
             {
@@ -129,7 +119,6 @@ namespace PetCare360.IntegrationTests.Integration
             });
             var pet = await petResponse.Content.ReadFromJsonAsync<Pet>();
 
-            // Act
             var response = await _client.PutAsJsonAsync($"/api/Pets/{pet!.IdPet}", new
             {
                 idPet = pet.IdPet + 500,
@@ -139,30 +128,24 @@ namespace PetCare360.IntegrationTests.Integration
                 idTutor
             });
 
-            // Assert
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [Fact]
         public async Task DeletarPet_PetInexistente_RetornaNotFound()
         {
-            // Arrange
             var idInexistente = 999999;
 
-            // Act
             var response = await _client.DeleteAsync($"/api/Pets/{idInexistente}");
 
-            // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [Fact]
         public async Task CicloCompleto_CriarAtualizarEDeletar_FunicionaDePontaAPonta()
         {
-            // Arrange
             var idTutor = await CriarTutorAsync("tutor.ciclo@petcare360.com");
 
-            // Act
             var criacao = await _client.PostAsJsonAsync("/api/Pets", new
             {
                 nmPet = "Bidu",
@@ -182,15 +165,14 @@ namespace PetCare360.IntegrationTests.Integration
             });
 
             var consulta = await _client.GetAsync($"/api/Pets/{pet.IdPet}");
-            var petAtualizado = await consulta.Content.ReadFromJsonAsync<Pet>();
+            var petAtualizado = await consulta.Content.ReadFromJsonAsync<Recurso<Pet>>();
 
             var exclusao = await _client.DeleteAsync($"/api/Pets/{pet.IdPet}");
             var buscaAposExclusao = await _client.GetAsync($"/api/Pets/{pet.IdPet}");
 
-            // Assert
             Assert.Equal(HttpStatusCode.Created, criacao.StatusCode);
             Assert.Equal(HttpStatusCode.NoContent, atualizacao.StatusCode);
-            Assert.Equal("Bidu Segundo", petAtualizado!.NmPet);
+            Assert.Equal("Bidu Segundo", petAtualizado!.Dados.NmPet);
             Assert.Equal(HttpStatusCode.NoContent, exclusao.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, buscaAposExclusao.StatusCode);
         }

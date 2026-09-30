@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
-using PetCare360.Domain.Pagination;
 using PetCare360.IntegrationTests.FactoryFixture;
 
 namespace PetCare360.IntegrationTests.Integration
@@ -93,9 +93,9 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync("/api/Tutores?email=diego.fontes@petcare360.com");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Tutor>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Tutor>>();
             Assert.NotNull(resultado);
-            Assert.Contains(resultado.Itens, t => t.Email == "diego.fontes@petcare360.com");
+            Assert.Contains(resultado.Itens, r => r.Dados.Email == "diego.fontes@petcare360.com");
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Json;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
-using PetCare360.Domain.Pagination;
 using PetCare360.IntegrationTests.FactoryFixture;
 
 namespace PetCare360.IntegrationTests.Integration
@@ -57,13 +57,15 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync($"/api/Pets?especie={especie}&pagina=1&tamanhoPagina=2");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Pet>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Pet>>();
             Assert.NotNull(resultado);
             Assert.Equal(2, resultado.Itens.Count());
             Assert.Equal(3, resultado.TotalItens);
             Assert.Equal(2, resultado.TotalPaginas);
             Assert.True(resultado.TemProximaPagina);
             Assert.False(resultado.TemPaginaAnterior);
+            Assert.Contains(resultado.Links, l => l.Rel == "next" && l.Href.Contains("pagina=2"));
+            Assert.DoesNotContain(resultado.Links, l => l.Rel == "previous");
         }
 
         [Fact]
@@ -74,11 +76,12 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync($"/api/Pets?especie={especie}&pagina=2&tamanhoPagina=2");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Pet>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Pet>>();
             Assert.NotNull(resultado);
             Assert.Single(resultado.Itens);
             Assert.False(resultado.TemProximaPagina);
             Assert.True(resultado.TemPaginaAnterior);
+            Assert.Contains(resultado.Links, l => l.Rel == "previous" && l.Href.Contains("pagina=1"));
         }
 
         [Fact]
@@ -89,9 +92,9 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync($"/api/Pets?especie={especie}&ordenarPor=nome&ascendente=false");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Pet>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Pet>>();
             Assert.NotNull(resultado);
-            var nomes = resultado.Itens.Select(p => p.NmPet).ToList();
+            var nomes = resultado.Itens.Select(r => r.Dados.NmPet).ToList();
             Assert.Equal(new List<string> { "Gama", "Beta", "Alfa" }, nomes);
         }
 
@@ -103,10 +106,10 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync($"/api/Pets?especie={especie}&nome=bol");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Pet>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Pet>>();
             Assert.NotNull(resultado);
             Assert.Equal(2, resultado.TotalItens);
-            Assert.All(resultado.Itens, p => Assert.StartsWith("Bol", p.NmPet));
+            Assert.All(resultado.Itens, r => Assert.StartsWith("Bol", r.Dados.NmPet));
         }
 
         [Fact]
@@ -115,7 +118,7 @@ namespace PetCare360.IntegrationTests.Integration
             var response = await _client.GetAsync("/api/Tutores?tamanhoPagina=1000");
 
             response.EnsureSuccessStatusCode();
-            var resultado = await response.Content.ReadFromJsonAsync<PagedResult<Tutor>>();
+            var resultado = await response.Content.ReadFromJsonAsync<RecursoPaginado<Tutor>>();
             Assert.NotNull(resultado);
             Assert.Equal(50, resultado.TamanhoPagina);
         }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using PetCare360.API.Controllers;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Exceptions;
 using PetCare360.Domain.Interfaces;
@@ -24,43 +25,35 @@ namespace PetCare360.UnitTests.Controllers
         [Fact]
         public async Task GetById_PetExiste_RetornaOk()
         {
-            // Arrange
             var petEsperado = new Pet { IdPet = 1, NmPet = "Rex", Especie = "Cachorro" };
             _mockService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(petEsperado);
 
-            // Act
             var resultado = await _controller.GetById(1);
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(resultado);
-            var petRetornado = Assert.IsType<Pet>(okResult.Value);
-            Assert.Equal("Rex", petRetornado.NmPet);
+            var recurso = Assert.IsType<Recurso<Pet>>(okResult.Value);
+            Assert.Equal("Rex", recurso.Dados.NmPet);
+            Assert.Contains(recurso.Links, l => l.Rel == "self" && l.Href == "/api/Pets/1");
         }
 
         [Fact]
         public async Task GetById_PetNaoExiste_RetornaNotFound()
         {
-            // Arrange
             _mockService.Setup(s => s.GetByIdAsync(99)).ReturnsAsync((Pet?)null);
 
-            // Act
             var resultado = await _controller.GetById(99);
 
-            // Assert
             Assert.IsType<NotFoundObjectResult>(resultado);
         }
 
         [Fact]
         public async Task Create_DadosValidos_RetornaCreated()
         {
-            // Arrange
             var pet = new Pet { IdPet = 1, NmPet = "Rex", Especie = "Cachorro", IdTutor = 1 };
             _mockService.Setup(s => s.CreateAsync(It.IsAny<Pet>())).ReturnsAsync(pet);
 
-            // Act
             var resultado = await _controller.Create(pet);
 
-            // Assert
             var createdResult = Assert.IsType<CreatedAtActionResult>(resultado);
             Assert.Equal(nameof(PetsController.GetById), createdResult.ActionName);
         }
@@ -68,30 +61,23 @@ namespace PetCare360.UnitTests.Controllers
         [Fact]
         public async Task Create_TutorInexistente_PropagaExcecaoParaOHandlerGlobal()
         {
-            // Arrange
             var pet = new Pet { NmPet = "Rex", Especie = "Cachorro", IdTutor = 999 };
             _mockService.Setup(s => s.CreateAsync(It.IsAny<Pet>()))
                 .ThrowsAsync(new RegraDeNegocioException("O tutor informado não existe."));
 
-            // Act
-            //o controller não trata mais a exceção: ela sobe e o GlobalExceptionHandler transforma em 400
             var excecao = await Assert.ThrowsAsync<RegraDeNegocioException>(
                 () => _controller.Create(pet));
 
-            // Assert
             Assert.Equal("O tutor informado não existe.", excecao.Message);
         }
 
         [Fact]
         public async Task Update_IdDaUrlDiferenteDoCorpo_RetornaBadRequest()
         {
-            // Arrange
             var pet = new Pet { IdPet = 2, NmPet = "Rex", Especie = "Cachorro" };
 
-            // Act
             var resultado = await _controller.Update(1, pet);
 
-            // Assert
             Assert.IsType<BadRequestObjectResult>(resultado);
             _mockService.Verify(s => s.UpdateAsync(It.IsAny<int>(), It.IsAny<Pet>()), Times.Never);
         }
@@ -99,13 +85,10 @@ namespace PetCare360.UnitTests.Controllers
         [Fact]
         public async Task Delete_PetNaoExiste_RetornaNotFound()
         {
-            // Arrange
             _mockService.Setup(s => s.DeleteAsync(99)).ReturnsAsync(false);
 
-            // Act
             var resultado = await _controller.Delete(99);
 
-            // Assert
             Assert.IsType<NotFoundObjectResult>(resultado);
         }
     }

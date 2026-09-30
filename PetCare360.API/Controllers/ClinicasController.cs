@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
 using PetCare360.Domain.Pagination;
@@ -9,6 +10,8 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class ClinicasController : ControllerBase
     {
+        private const string Rota = "/api/Clinicas";
+
         private readonly IClinicaService _clinicaService;
         private readonly ILogger<ClinicasController> _logger;
 
@@ -19,15 +22,15 @@ namespace PetCare360.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<Clinica>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RecursoPaginado<Clinica>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] ClinicaQueryParameters parametros)
         {
             var clinicas = await _clinicaService.GetPagedAsync(parametros);
-            return Ok(clinicas);
+            return Ok(HateoasBuilder.CriarRecursoPaginado(clinicas, parametros, Rota, CriarRecurso));
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Recurso<Clinica>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
@@ -36,11 +39,11 @@ namespace PetCare360.API.Controllers
             {
                 return NotFound("Clínica não encontrada.");
             }
-            return Ok(clinica);
+            return Ok(CriarRecurso(clinica));
         }
 
         [HttpGet("cnpj/{cnpj}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Recurso<Clinica>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByCnpj(string cnpj)
         {
@@ -49,7 +52,7 @@ namespace PetCare360.API.Controllers
             {
                 return NotFound("Clínica não encontrada.");
             }
-            return Ok(clinica);
+            return Ok(CriarRecurso(clinica));
         }
 
         [HttpPost]
@@ -104,6 +107,12 @@ namespace PetCare360.API.Controllers
             }
 
             return NoContent();
+        }
+
+        private static Recurso<Clinica> CriarRecurso(Clinica clinica)
+        {
+            return HateoasBuilder.CriarRecurso(clinica, Rota, clinica.IdClinica,
+                new Link($"/api/Consultas/clinica/{clinica.IdClinica}", "consultas", "GET"));
         }
     }
 }

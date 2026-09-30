@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PetCare360.API.Hateoas;
 using PetCare360.Domain.Entities;
 using PetCare360.Domain.Interfaces;
 using PetCare360.Domain.Pagination;
@@ -9,6 +10,8 @@ namespace PetCare360.API.Controllers
     [Route("api/[controller]")]
     public class VacinasController : ControllerBase
     {
+        private const string Rota = "/api/Vacinas";
+
         private readonly IVacinaService _vacinaService;
         private readonly ILogger<VacinasController> _logger;
 
@@ -19,15 +22,15 @@ namespace PetCare360.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<Vacina>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(RecursoPaginado<Vacina>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] VacinaQueryParameters parametros)
         {
             var vacinas = await _vacinaService.GetPagedAsync(parametros);
-            return Ok(vacinas);
+            return Ok(HateoasBuilder.CriarRecursoPaginado(vacinas, parametros, Rota, CriarRecurso));
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Recurso<Vacina>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
@@ -36,15 +39,15 @@ namespace PetCare360.API.Controllers
             {
                 return NotFound("Vacina não encontrada.");
             }
-            return Ok(vacina);
+            return Ok(CriarRecurso(vacina));
         }
 
         [HttpGet("pet/{petId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<Recurso<Vacina>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByPet(int petId)
         {
             var vacinas = await _vacinaService.GetByPetAsync(petId);
-            return Ok(vacinas);
+            return Ok(vacinas.Select(CriarRecurso));
         }
 
         [HttpPost]
@@ -98,6 +101,19 @@ namespace PetCare360.API.Controllers
             }
 
             return NoContent();
+        }
+
+        private static Recurso<Vacina> CriarRecurso(Vacina vacina)
+        {
+            var recurso = HateoasBuilder.CriarRecurso(vacina, Rota, vacina.IdVacina,
+                new Link($"/api/Pets/{vacina.IdPet}", "pet", "GET"));
+
+            if (vacina.IdConsulta.HasValue)
+            {
+                recurso.Links.Add(new Link($"/api/Consultas/{vacina.IdConsulta}", "consulta", "GET"));
+            }
+
+            return recurso;
         }
     }
 }
