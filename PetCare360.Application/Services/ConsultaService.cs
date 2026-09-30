@@ -14,6 +14,7 @@ namespace PetCare360.Application.Services
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPetRepository _petRepository;
         private readonly IClinicaRepository _clinicaRepository;
+        private readonly IAuditoriaService _auditoriaService;
         private readonly ILogger<ConsultaService> _logger;
 
         private static readonly ActivitySource ActivitySource = new(TelemetryConstants.ServiceName);
@@ -24,12 +25,14 @@ namespace PetCare360.Application.Services
             IConsultaRepository consultaRepository,
             IPetRepository petRepository,
             IClinicaRepository clinicaRepository,
+            IAuditoriaService auditoriaService,
             ILogger<ConsultaService> logger,
             IMeterFactory meterFactory)
         {
             _consultaRepository = consultaRepository;
             _petRepository = petRepository;
             _clinicaRepository = clinicaRepository;
+            _auditoriaService = auditoriaService;
             _logger = logger;
 
             var meter = meterFactory.Create(TelemetryConstants.MeterName);
@@ -83,6 +86,8 @@ namespace PetCare360.Application.Services
 
             await _consultaRepository.AddAsync(consulta);
 
+            await _auditoriaService.RegistrarAsync(nameof(Consulta), consulta.IdConsulta, AcaoAuditoria.Criacao, $"Consulta do pet {consulta.IdPet} registrada na clínica {consulta.IdClinica}");
+
             _logger.LogInformation("Consulta registrada com sucesso: {@Consulta}", consulta);
             _consultasCriadasCounter.Add(1);
 
@@ -105,6 +110,8 @@ namespace PetCare360.Application.Services
 
             await _consultaRepository.UpdateAsync(consultaExistente);
 
+            await _auditoriaService.RegistrarAsync(nameof(Consulta), id, AcaoAuditoria.Atualizacao, $"Consulta do pet {consultaExistente.IdPet} atualizada");
+
             _logger.LogInformation("Consulta atualizada. IdConsulta: {IdConsulta}", id);
             return true;
         }
@@ -118,6 +125,8 @@ namespace PetCare360.Application.Services
             }
 
             await _consultaRepository.DeleteAsync(consulta);
+
+            await _auditoriaService.RegistrarAsync(nameof(Consulta), id, AcaoAuditoria.Exclusao, $"Consulta do pet {consulta.IdPet} removida");
 
             _logger.LogInformation("Consulta removida. IdConsulta: {IdConsulta}", id);
             return true;

@@ -11,6 +11,7 @@ namespace PetCare360.Application.Services
     public class ClinicaService : IClinicaService
     {
         private readonly IClinicaRepository _clinicaRepository;
+        private readonly IAuditoriaService _auditoriaService;
         private readonly ILogger<ClinicaService> _logger;
 
         private static readonly ActivitySource ActivitySource = new(TelemetryConstants.ServiceName);
@@ -19,10 +20,12 @@ namespace PetCare360.Application.Services
 
         public ClinicaService(
             IClinicaRepository clinicaRepository,
+            IAuditoriaService auditoriaService,
             ILogger<ClinicaService> logger,
             IMeterFactory meterFactory)
         {
             _clinicaRepository = clinicaRepository;
+            _auditoriaService = auditoriaService;
             _logger = logger;
 
             var meter = meterFactory.Create(TelemetryConstants.MeterName);
@@ -56,6 +59,8 @@ namespace PetCare360.Application.Services
 
             await _clinicaRepository.AddAsync(clinica);
 
+            await _auditoriaService.RegistrarAsync(nameof(Clinica), clinica.IdClinica, AcaoAuditoria.Criacao, $"Clínica {clinica.NmClinica} cadastrada");
+
             _logger.LogInformation("Clínica cadastrada com sucesso: {@Clinica}", clinica);
             _clinicasCriadasCounter.Add(1);
 
@@ -78,6 +83,8 @@ namespace PetCare360.Application.Services
 
             await _clinicaRepository.UpdateAsync(clinicaExistente);
 
+            await _auditoriaService.RegistrarAsync(nameof(Clinica), id, AcaoAuditoria.Atualizacao, $"Clínica {clinicaExistente.NmClinica} atualizada");
+
             _logger.LogInformation("Clínica atualizada. IdClinica: {IdClinica}", id);
             return true;
         }
@@ -91,6 +98,8 @@ namespace PetCare360.Application.Services
             }
 
             await _clinicaRepository.DeleteAsync(clinica);
+
+            await _auditoriaService.RegistrarAsync(nameof(Clinica), id, AcaoAuditoria.Exclusao, $"Clínica {clinica.NmClinica} removida");
 
             _logger.LogInformation("Clínica removida. IdClinica: {IdClinica}", id);
             return true;

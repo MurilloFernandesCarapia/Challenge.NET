@@ -13,6 +13,7 @@ namespace PetCare360.Application.Services
     {
         private readonly IPetRepository _petRepository;
         private readonly ITutorRepository _tutorRepository;
+        private readonly IAuditoriaService _auditoriaService;
         private readonly ILogger<PetService> _logger;
 
         private static readonly ActivitySource ActivitySource = new(TelemetryConstants.ServiceName);
@@ -22,11 +23,13 @@ namespace PetCare360.Application.Services
         public PetService(
             IPetRepository petRepository,
             ITutorRepository tutorRepository,
+            IAuditoriaService auditoriaService,
             ILogger<PetService> logger,
             IMeterFactory meterFactory)
         {
             _petRepository = petRepository;
             _tutorRepository = tutorRepository;
+            _auditoriaService = auditoriaService;
             _logger = logger;
 
             var meter = meterFactory.Create(TelemetryConstants.MeterName);
@@ -72,7 +75,6 @@ namespace PetCare360.Application.Services
             activity?.SetTag("pet.nome", pet.NmPet);
             activity?.SetTag("pet.especie", pet.Especie);
 
-            
             bool tutorExiste = await _tutorRepository.ExistsAsync(pet.IdTutor);
             if (!tutorExiste)
             {
@@ -82,10 +84,10 @@ namespace PetCare360.Application.Services
 
             await _petRepository.AddAsync(pet);
 
-            
+            await _auditoriaService.RegistrarAsync(nameof(Pet), pet.IdPet, AcaoAuditoria.Criacao, $"Pet {pet.NmPet} ({pet.Especie}) cadastrado para o tutor {pet.IdTutor}");
+
             _logger.LogInformation("Pet cadastrado com sucesso: {@Pet}", pet);
 
-            
             _petsCriadosCounter.Add(1, new KeyValuePair<string, object?>("especie", pet.Especie));
 
             return pet;
@@ -108,6 +110,8 @@ namespace PetCare360.Application.Services
 
             await _petRepository.UpdateAsync(petExistente);
 
+            await _auditoriaService.RegistrarAsync(nameof(Pet), id, AcaoAuditoria.Atualizacao, $"Pet {petExistente.NmPet} atualizado");
+
             _logger.LogInformation("Pet atualizado. IdPet: {IdPet}", id);
             return true;
         }
@@ -121,6 +125,8 @@ namespace PetCare360.Application.Services
             }
 
             await _petRepository.DeleteAsync(pet);
+
+            await _auditoriaService.RegistrarAsync(nameof(Pet), id, AcaoAuditoria.Exclusao, $"Pet {pet.NmPet} removido");
 
             _logger.LogInformation("Pet removido. IdPet: {IdPet}", id);
             return true;

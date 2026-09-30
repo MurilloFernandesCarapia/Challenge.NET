@@ -13,6 +13,7 @@ namespace PetCare360.Application.Services
     {
         private readonly IMedicamentoRepository _medicamentoRepository;
         private readonly IPetRepository _petRepository;
+        private readonly IAuditoriaService _auditoriaService;
         private readonly ILogger<MedicamentoService> _logger;
 
         private static readonly ActivitySource ActivitySource = new(TelemetryConstants.ServiceName);
@@ -22,11 +23,13 @@ namespace PetCare360.Application.Services
         public MedicamentoService(
             IMedicamentoRepository medicamentoRepository,
             IPetRepository petRepository,
+            IAuditoriaService auditoriaService,
             ILogger<MedicamentoService> logger,
             IMeterFactory meterFactory)
         {
             _medicamentoRepository = medicamentoRepository;
             _petRepository = petRepository;
+            _auditoriaService = auditoriaService;
             _logger = logger;
 
             var meter = meterFactory.Create(TelemetryConstants.MeterName);
@@ -68,6 +71,8 @@ namespace PetCare360.Application.Services
 
             await _medicamentoRepository.AddAsync(medicamento);
 
+            await _auditoriaService.RegistrarAsync(nameof(Medicamento), medicamento.IdMedicamento, AcaoAuditoria.Criacao, $"Medicamento {medicamento.NmMedicamento} prescrito para o pet {medicamento.IdPet}");
+
             _logger.LogInformation("Medicamento prescrito com sucesso: {@Medicamento}", medicamento);
             _medicamentosPrescritosCounter.Add(1);
 
@@ -92,6 +97,8 @@ namespace PetCare360.Application.Services
 
             await _medicamentoRepository.UpdateAsync(medicamentoExistente);
 
+            await _auditoriaService.RegistrarAsync(nameof(Medicamento), id, AcaoAuditoria.Atualizacao, $"Medicamento {medicamentoExistente.NmMedicamento} atualizado");
+
             _logger.LogInformation("Medicamento atualizado. IdMedicamento: {IdMedicamento}", id);
             return true;
         }
@@ -105,6 +112,8 @@ namespace PetCare360.Application.Services
             }
 
             await _medicamentoRepository.DeleteAsync(medicamento);
+
+            await _auditoriaService.RegistrarAsync(nameof(Medicamento), id, AcaoAuditoria.Exclusao, $"Medicamento {medicamento.NmMedicamento} removido");
 
             _logger.LogInformation("Medicamento removido. IdMedicamento: {IdMedicamento}", id);
             return true;

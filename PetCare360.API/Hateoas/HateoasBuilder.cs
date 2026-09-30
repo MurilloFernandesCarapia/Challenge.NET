@@ -27,7 +27,8 @@ namespace PetCare360.API.Hateoas
             PagedResult<T> resultado,
             QueryParameters parametros,
             string rotaBase,
-            Func<T, Recurso<T>> criarRecurso)
+            Func<T, Recurso<T>> criarRecurso,
+            bool permiteCriacao = true)
         {
             var recursoPaginado = new RecursoPaginado<T>
             {
@@ -58,7 +59,10 @@ namespace PetCare360.API.Hateoas
                 recursoPaginado.Links.Add(new Link(MontarUrl(rotaBase, parametros, resultado.TotalPaginas), "last", "GET"));
             }
 
-            recursoPaginado.Links.Add(new Link(rotaBase, "create", "POST"));
+            if (permiteCriacao)
+            {
+                recursoPaginado.Links.Add(new Link(rotaBase, "create", "POST"));
+            }
 
             return recursoPaginado;
         }

@@ -11,16 +11,19 @@ namespace PetCare360.UnitTests.Services
     public class TutorServiceTests
     {
         private readonly Mock<ITutorRepository> _mockTutorRepository;
+        private readonly Mock<IAuditoriaService> _mockAuditoriaService;
         private readonly Mock<ILogger<TutorService>> _mockLogger;
         private readonly TutorService _tutorService;
 
         public TutorServiceTests(TelemetryFixture fixture)
         {
             _mockTutorRepository = new Mock<ITutorRepository>();
+            _mockAuditoriaService = new Mock<IAuditoriaService>();
             _mockLogger = new Mock<ILogger<TutorService>>();
 
             _tutorService = new TutorService(
                 _mockTutorRepository.Object,
+                _mockAuditoriaService.Object,
                 _mockLogger.Object,
                 fixture.MeterFactory);
         }
@@ -28,7 +31,6 @@ namespace PetCare360.UnitTests.Services
         [Fact]
         public async Task GetAllAsync_ExistemTutores_RetornaListaCompleta()
         {
-          
             var tutores = new List<Tutor>
             {
                 new Tutor { IdTutor = 1, NmTutor = "Ana", Cpf = "111", Email = "ana@email.com" },
@@ -36,39 +38,33 @@ namespace PetCare360.UnitTests.Services
             };
             _mockTutorRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(tutores);
 
-           
             var resultado = await _tutorService.GetAllAsync();
 
-           
             Assert.Equal(2, resultado.Count());
         }
 
         [Fact]
-        public async Task CreateAsync_DadosValidos_CadastraTutor()
+        public async Task CreateAsync_DadosValidos_CadastraTutorERegistraAuditoria()
         {
-           
-            var tutor = new Tutor { NmTutor = "Ana", Cpf = "111", Email = "ana@email.com" };
+            var tutor = new Tutor { IdTutor = 3, NmTutor = "Ana", Cpf = "111", Email = "ana@email.com" };
 
-         
             var resultado = await _tutorService.CreateAsync(tutor);
 
-         
             Assert.Equal("Ana", resultado.NmTutor);
             _mockTutorRepository.Verify(r => r.AddAsync(tutor), Times.Once);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync("Tutor", 3, AcaoAuditoria.Criacao, It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task DeleteAsync_TutorNaoExiste_RetornaFalse()
         {
-           
             _mockTutorRepository.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Tutor?)null);
 
-          
             var resultado = await _tutorService.DeleteAsync(99);
 
-          
             Assert.False(resultado);
             _mockTutorRepository.Verify(r => r.DeleteAsync(It.IsAny<Tutor>()), Times.Never);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
 }
