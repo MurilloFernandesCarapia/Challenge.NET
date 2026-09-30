@@ -13,6 +13,7 @@ using PetCare360.Infrastructure.Data;
 using PetCare360.Infrastructure.HealthChecks;
 using PetCare360.Infrastructure.NoSql;
 using PetCare360.Infrastructure.Repositories;
+using PetCare360.Infrastructure.Security;
 
 namespace PetCare360.Infrastructure
 {
@@ -35,6 +36,7 @@ namespace PetCare360.Infrastructure
             services.AddScoped<IVacinaRepository, VacinaRepository>();
             services.AddScoped<IMedicamentoRepository, MedicamentoRepository>();
             services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             services.AddScoped<ITutorService, TutorService>();
             services.AddScoped<IPetService, PetService>();
@@ -43,6 +45,10 @@ namespace PetCare360.Infrastructure
             services.AddScoped<IVacinaService, VacinaService>();
             services.AddScoped<IMedicamentoService, MedicamentoService>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
+            services.AddScoped<IAuthService, AuthService>();
+
+            services.AddSingleton<ISenhaHasher, Pbkdf2SenhaHasher>();
+            services.AddScoped<ITokenService, JwtTokenService>();
 
             services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
