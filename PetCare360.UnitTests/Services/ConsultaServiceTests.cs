@@ -92,5 +92,61 @@ namespace PetCare360.UnitTests.Services
             Assert.Equal(2, resultado.Count());
             Assert.All(resultado, c => Assert.Equal(1, c.IdPet));
         }
+
+        [Fact]
+        public async Task GetByClinicaAsync_ClinicaComConsultas_RetornaSomenteAsDaClinica()
+        {
+            var consultas = new List<Consulta>
+            {
+                new Consulta { IdConsulta = 3, IdPet = 1, IdClinica = 2 },
+                new Consulta { IdConsulta = 4, IdPet = 5, IdClinica = 2 }
+            };
+            _mockConsultaRepository.Setup(r => r.GetByClinicaAsync(2)).ReturnsAsync(consultas);
+
+            var resultado = await _consultaService.GetByClinicaAsync(2);
+
+            Assert.Equal(2, resultado.Count());
+            Assert.All(resultado, c => Assert.Equal(2, c.IdClinica));
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ConsultaExiste_AtualizaDiagnosticoERetornaTrue()
+        {
+            var consultaExistente = new Consulta { IdConsulta = 5, DtConsulta = new DateTime(2026, 9, 10), Descricao = "Check-up", Diagnostico = "Em análise", IdPet = 1, IdClinica = 1 };
+            var dadosNovos = new Consulta { IdConsulta = 5, DtConsulta = new DateTime(2026, 9, 12), Descricao = "Check-up", Diagnostico = "Saudável", IdPet = 1, IdClinica = 1 };
+            _mockConsultaRepository.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(consultaExistente);
+
+            var resultado = await _consultaService.UpdateAsync(5, dadosNovos);
+
+            Assert.True(resultado);
+            Assert.Equal("Saudável", consultaExistente.Diagnostico);
+            Assert.Equal(new DateTime(2026, 9, 12), consultaExistente.DtConsulta);
+            _mockConsultaRepository.Verify(r => r.UpdateAsync(consultaExistente), Times.Once);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync("Consulta", 5, AcaoAuditoria.Atualizacao, It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ConsultaNaoExiste_RetornaFalse()
+        {
+            _mockConsultaRepository.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Consulta?)null);
+
+            var resultado = await _consultaService.UpdateAsync(99, new Consulta { IdConsulta = 99 });
+
+            Assert.False(resultado);
+            _mockConsultaRepository.Verify(r => r.UpdateAsync(It.IsAny<Consulta>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ConsultaExiste_RemoveERegistraExclusao()
+        {
+            var consulta = new Consulta { IdConsulta = 6, IdPet = 1, IdClinica = 1 };
+            _mockConsultaRepository.Setup(r => r.GetByIdAsync(6)).ReturnsAsync(consulta);
+
+            var resultado = await _consultaService.DeleteAsync(6);
+
+            Assert.True(resultado);
+            _mockConsultaRepository.Verify(r => r.DeleteAsync(consulta), Times.Once);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync("Consulta", 6, AcaoAuditoria.Exclusao, It.IsAny<string>()), Times.Once);
+        }
     }
 }

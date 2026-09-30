@@ -66,5 +66,46 @@ namespace PetCare360.UnitTests.Services
             _mockTutorRepository.Verify(r => r.DeleteAsync(It.IsAny<Tutor>()), Times.Never);
             _mockAuditoriaService.Verify(a => a.RegistrarAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
+
+        [Fact]
+        public async Task UpdateAsync_TutorExiste_AtualizaDadosERetornaTrue()
+        {
+            var tutorExistente = new Tutor { IdTutor = 4, NmTutor = "Ana", Cpf = "111", Email = "ana@email.com", Telefone = "(11) 90000-0000", Endereco = "Rua A, 1" };
+            var dadosNovos = new Tutor { IdTutor = 4, NmTutor = "Ana Souza", Cpf = "111", Email = "ana.souza@email.com", Telefone = "(11) 98888-7777", Endereco = "Rua B, 2" };
+            _mockTutorRepository.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(tutorExistente);
+
+            var resultado = await _tutorService.UpdateAsync(4, dadosNovos);
+
+            Assert.True(resultado);
+            Assert.Equal("Ana Souza", tutorExistente.NmTutor);
+            Assert.Equal("ana.souza@email.com", tutorExistente.Email);
+            Assert.Equal("Rua B, 2", tutorExistente.Endereco);
+            _mockTutorRepository.Verify(r => r.UpdateAsync(tutorExistente), Times.Once);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync("Tutor", 4, AcaoAuditoria.Atualizacao, It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_TutorNaoExiste_RetornaFalse()
+        {
+            _mockTutorRepository.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Tutor?)null);
+
+            var resultado = await _tutorService.UpdateAsync(99, new Tutor { IdTutor = 99, NmTutor = "Ninguém" });
+
+            Assert.False(resultado);
+            _mockTutorRepository.Verify(r => r.UpdateAsync(It.IsAny<Tutor>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_TutorExiste_RemoveERegistraExclusao()
+        {
+            var tutor = new Tutor { IdTutor = 7, NmTutor = "Bruno", Cpf = "222", Email = "bruno@email.com" };
+            _mockTutorRepository.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(tutor);
+
+            var resultado = await _tutorService.DeleteAsync(7);
+
+            Assert.True(resultado);
+            _mockTutorRepository.Verify(r => r.DeleteAsync(tutor), Times.Once);
+            _mockAuditoriaService.Verify(a => a.RegistrarAsync("Tutor", 7, AcaoAuditoria.Exclusao, It.IsAny<string>()), Times.Once);
+        }
     }
 }

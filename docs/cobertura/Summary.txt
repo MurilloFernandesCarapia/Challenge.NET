@@ -1,35 +1,35 @@
 Summary
-  Generated on: 30/09/2026 - 00:56:42
-  Coverage date: 30/09/2026 - 00:56:27 - 30/09/2026 - 00:56:29
+  Generated on: 30/09/2026 - 01:04:44
+  Coverage date: 30/09/2026 - 01:04:42 - 30/09/2026 - 01:04:43
   Parser: MultiReport (2x Cobertura)
   Assemblies: 2
   Classes: 31
   Files: 31
-  Line coverage: 82.7%
-  Covered lines: 493
-  Uncovered lines: 103
+  Line coverage: 92.1%
+  Covered lines: 549
+  Uncovered lines: 47
   Coverable lines: 596
   Total lines: 1343
-  Branch coverage: 69.1% (47 of 68)
-  Covered branches: 47
+  Branch coverage: 77.9% (53 of 68)
+  Covered branches: 53
   Total branches: 68
-  Method coverage: 83.1% (148 of 178)
-  Full method coverage: 81.4% (145 of 178)
-  Covered methods: 148
-  Fully covered methods: 145
+  Method coverage: 91.5% (163 of 178)
+  Full method coverage: 89.8% (160 of 178)
+  Covered methods: 163
+  Fully covered methods: 160
   Total methods: 178
 
-PetCare360.Application                                         81.1%
+PetCare360.Application                                         90.5%
   PetCare360.Application.Services.AuditoriaService              100%
   PetCare360.Application.Services.AuthService                   100%
   PetCare360.Application.Services.ClinicaService               89.8%
-  PetCare360.Application.Services.ConsultaService              55.8%
+  PetCare360.Application.Services.ConsultaService              89.6%
   PetCare360.Application.Services.MedicamentoService             84%
   PetCare360.Application.Services.PetService                   88.1%
-  PetCare360.Application.Services.TutorService                   66%
+  PetCare360.Application.Services.TutorService                  100%
   PetCare360.Application.Services.VacinaService                83.8%
 
-PetCare360.Domain                                                89%
+PetCare360.Domain                                              98.3%
   PetCare360.Domain.Dtos.LoginRequest                           100%
   PetCare360.Domain.Dtos.RegistroUsuarioRequest                 100%
   PetCare360.Domain.Dtos.TokenResponse                          100%
@@ -46,10 +46,10 @@ PetCare360.Domain                                                89%
   PetCare360.Domain.Exceptions.RegraDeNegocioException          100%
   PetCare360.Domain.Pagination.AuditoriaQueryParameters         100%
   PetCare360.Domain.Pagination.ClinicaQueryParameters           100%
-  PetCare360.Domain.Pagination.ConsultaQueryParameters            0%
-  PetCare360.Domain.Pagination.MedicamentoQueryParameters         0%
+  PetCare360.Domain.Pagination.ConsultaQueryParameters          100%
+  PetCare360.Domain.Pagination.MedicamentoQueryParameters       100%
   PetCare360.Domain.Pagination.PagedResult<T>                   100%
   PetCare360.Domain.Pagination.PetQueryParameters               100%
   PetCare360.Domain.Pagination.QueryParameters                  100%
   PetCare360.Domain.Pagination.TutorQueryParameters             100%
-  PetCare360.Domain.Pagination.VacinaQueryParameters              0%
+  PetCare360.Domain.Pagination.VacinaQueryParameters            100%

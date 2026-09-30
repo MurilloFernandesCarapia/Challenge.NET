@@ -49,5 +49,28 @@ namespace PetCare360.UnitTests.Domain
 
             Assert.Equal(10, parametros.TamanhoPagina);
         }
+
+        [Fact]
+        public void FiltrosEspecificos_ValoresInformados_SaoMantidos()
+        {
+            var inicio = new DateTime(2026, 9, 1);
+            var fim = new DateTime(2026, 9, 30);
+
+            var consulta = new ConsultaQueryParameters { IdPet = 1, IdClinica = 2, DataInicio = inicio, DataFim = fim };
+            var medicamento = new MedicamentoQueryParameters { Nome = "Amoxicilina", IdPet = 3, EmUso = true };
+            var vacina = new VacinaQueryParameters { Nome = "V10", Fabricante = "Zoetis", IdPet = 4, ProximaDoseAte = fim };
+
+            Assert.Equal(1, consulta.IdPet);
+            Assert.Equal(2, consulta.IdClinica);
+            Assert.Equal(inicio, consulta.DataInicio);
+            Assert.Equal(fim, consulta.DataFim);
+            Assert.Equal("Amoxicilina", medicamento.Nome);
+            Assert.Equal(3, medicamento.IdPet);
+            Assert.True(medicamento.EmUso);
+            Assert.Equal("V10", vacina.Nome);
+            Assert.Equal("Zoetis", vacina.Fabricante);
+            Assert.Equal(4, vacina.IdPet);
+            Assert.Equal(fim, vacina.ProximaDoseAte);
+        }
     }
 }
