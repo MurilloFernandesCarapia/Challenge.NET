@@ -40,3 +40,5 @@ secrets.json
 publish/
 artifacts/
 logs/
+
+TestResults/

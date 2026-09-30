@@ -1,0 +1,55 @@
+Summary
+  Generated on: 30/09/2026 - 00:56:42
+  Coverage date: 30/09/2026 - 00:56:27 - 30/09/2026 - 00:56:29
+  Parser: MultiReport (2x Cobertura)
+  Assemblies: 2
+  Classes: 31
+  Files: 31
+  Line coverage: 82.7%
+  Covered lines: 493
+  Uncovered lines: 103
+  Coverable lines: 596
+  Total lines: 1343
+  Branch coverage: 69.1% (47 of 68)
+  Covered branches: 47
+  Total branches: 68
+  Method coverage: 83.1% (148 of 178)
+  Full method coverage: 81.4% (145 of 178)
+  Covered methods: 148
+  Fully covered methods: 145
+  Total methods: 178
+
+PetCare360.Application                                         81.1%
+  PetCare360.Application.Services.AuditoriaService              100%
+  PetCare360.Application.Services.AuthService                   100%
+  PetCare360.Application.Services.ClinicaService               89.8%
+  PetCare360.Application.Services.ConsultaService              55.8%
+  PetCare360.Application.Services.MedicamentoService             84%
+  PetCare360.Application.Services.PetService                   88.1%
+  PetCare360.Application.Services.TutorService                   66%
+  PetCare360.Application.Services.VacinaService                83.8%
+
+PetCare360.Domain                                                89%
+  PetCare360.Domain.Dtos.LoginRequest                           100%
+  PetCare360.Domain.Dtos.RegistroUsuarioRequest                 100%
+  PetCare360.Domain.Dtos.TokenResponse                          100%
+  PetCare360.Domain.Dtos.UsuarioResponse                        100%
+  PetCare360.Domain.Entities.Clinica                            100%
+  PetCare360.Domain.Entities.Consulta                           100%
+  PetCare360.Domain.Entities.Medicamento                         80%
+  PetCare360.Domain.Entities.Pet                                100%
+  PetCare360.Domain.Entities.RegistroAuditoria                  100%
+  PetCare360.Domain.Entities.Tutor                              100%
+  PetCare360.Domain.Entities.Usuario                            100%
+  PetCare360.Domain.Entities.Vacina                             100%
+  PetCare360.Domain.Exceptions.CredenciaisInvalidasException    100%
+  PetCare360.Domain.Exceptions.RegraDeNegocioException          100%
+  PetCare360.Domain.Pagination.AuditoriaQueryParameters         100%
+  PetCare360.Domain.Pagination.ClinicaQueryParameters           100%
+  PetCare360.Domain.Pagination.ConsultaQueryParameters            0%
+  PetCare360.Domain.Pagination.MedicamentoQueryParameters         0%
+  PetCare360.Domain.Pagination.PagedResult<T>                   100%
+  PetCare360.Domain.Pagination.PetQueryParameters               100%
+  PetCare360.Domain.Pagination.QueryParameters                  100%
+  PetCare360.Domain.Pagination.TutorQueryParameters             100%
+  PetCare360.Domain.Pagination.VacinaQueryParameters              0%
